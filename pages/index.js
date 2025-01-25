@@ -5,19 +5,17 @@ import axios from "@/lib/axios";
 import styles from "@/styles/Home.module.css";
 import Head from "next/head";
 
-export default function Home() {
-  const [products, setProducts] = useState([]);
+export async function getStaticProps() {
+  const res = await axios.get("/products");
+  return {
+    props: {
+      products: res.data.results,
+    },
+    revalidate: 60, // 60초마다 데이터를 재생성
+  };
+}
 
-  async function getProducts() {
-    const res = await axios.get("/products");
-    const nextProducts = res.data.results;
-    setProducts(nextProducts);
-  }
-
-  useEffect(() => {
-    getProducts();
-  }, []);
-
+export default function Home({ products }) {
   return (
     <>
       <Head>
