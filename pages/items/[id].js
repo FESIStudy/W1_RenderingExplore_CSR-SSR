@@ -1,38 +1,44 @@
-import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import axios from "@/lib/axios";
 import styles from "@/styles/Product.module.css";
 import SizeReviewList from "@/components/SizeReviewList";
 import StarRating from "@/components/StarRating";
-import Header from "@/components/Header";
-import Container from "@/components/Container";
 import Image from "next/image";
 
-export default function Product() {
-  const [product, setProduct] = useState();
-  const [sizeReviews, setSizeReviews] = useState([]);
-  const router = useRouter();
-  const { id } = router.query;
+// SSR 함수 정의
+export async function getServerSideProps(context) {
+  const { id } = context.params;
 
-  async function getProduct(targetId) {
-    const res = await axios.get(`/products/${targetId}`);
-    const nextProduct = res.data;
-    setProduct(nextProduct);
+  if (!id) {
+    return {
+      notFound: true,
+    };
   }
 
-  async function getSizeReviews(targetId) {
-    const res = await axios.get(`/size_reviews/?product_id=${targetId}`);
-    const nextSizeReviews = res.data.results ?? [];
-    setSizeReviews(nextSizeReviews);
+  try {
+    const [productRes, sizeReviewsRes] = await Promise.all([
+      axios.get(`/products/${id}`),
+      axios.get(`/size_reviews/?product_id=${id}`),
+    ]);
+
+    const product = productRes.data;
+    const sizeReviews = sizeReviewsRes.data.results ?? [];
+
+    return {
+      props: {
+        product,
+        sizeReviews,
+      },
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      notFound: true,
+    };
   }
+}
 
-  useEffect(() => {
-    if (!id) return;
-
-    getProduct(id);
-    getSizeReviews(id);
-  }, [id]);
-
+export default function Product({ product, sizeReviews }) {
   if (!product) return null;
 
   return (
